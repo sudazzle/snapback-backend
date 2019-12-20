@@ -1,0 +1,9 @@
+db_name = name
+db_password = password
+db_user = user
+db_type = postgres
+db_host = localhost
+db_port = 5432
+token_password = passwordtoken
+reset_password_token = resetpasswordtoken
+csrf_token_key = 32-byte-long-auth-key
