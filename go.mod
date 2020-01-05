@@ -1,6 +1,7 @@
 module snapback
 
 require (
+	github.com/NaySoftware/go-fcm v0.0.0-20190516140123-808e978ddcd2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gorilla/csrf v1.6.1
 	github.com/gorilla/handlers v1.4.2

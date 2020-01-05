@@ -40,13 +40,12 @@ http://gorm.io/docs/models.html
 // User struct
 type User struct {
 	gorm.Model
-	Name     string `json:"name"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	PhoneNo  string `json:"phone_no"` // Camel cased adds underscore
-	Password string `json:"password"`
-	Role     string `json:"role"`
-	Token    string `json:"token" sql:"-"` // sql:"-" means ignore this field in db
+	Name        string `json:"name"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	Role        string `json:"role"`
+	DeviceToken string `json:"device_token"`
+	Token       string `json:"token" sql:"-"` // sql:"-" means ignore this field in db
 }
 
 /*
@@ -169,16 +168,32 @@ func GetUser(val string, by string) (interface{}, string, int) {
 }
 
 // GetUsers returns list of users
-func GetUsers() ([]User, string, int) {
+func GetUsers(limit int64, offset int64) ([]User, string, int) {
 	var users []User
-	err := GetDB().Select("id, email, name, phone_no, role, username").Find(&users).Error
-	// err := GetDB().Table("users").Find(&users).Error
+	// err := GetDB().Select("id, email, name, role").Where("id >= ?", start).Limit(limit).Order("id").Find(&users).Error
+	err := GetDB().Table("users").Order("id desc").Offset(offset).Limit(limit).Find(&users).Error
 
 	if err != nil {
 		return nil, "Database error", http.StatusInternalServerError
 	}
 
 	return users, "", http.StatusOK
+}
+
+// GetTokens returns the list of firebase device tokens
+func GetTokens(userID uint) []string {
+	var tokens []string
+	rows, err := GetDB().Table("users").Select("device_token").Where("device_token IS NOT NULL AND ID <> ?", userID).Rows()
+	defer rows.Close()
+	if err == nil {
+		for rows.Next() {
+			var token string
+			rows.Scan(&token)
+			tokens = append(tokens, token)
+		}
+	}
+
+	return tokens
 }
 
 // UpdateUser updates the user info

@@ -7,6 +7,7 @@ import (
 	"net/smtp"
 	"snapback/models"
 	u "snapback/utils"
+	"strconv"
 
 	"github.com/gorilla/mux"
 
@@ -37,23 +38,33 @@ var ResetPassword = func(w http.ResponseWriter, r *http.Request) {
 
 	user := res.(*models.User)
 
-	tk := &models.Token{UserID: user.ID, Role: user.Role}
-	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
-	tokenString, _ := token.SignedString([]byte(os.Getenv("reset_password_token")))
+	// tk := &models.Token{UserID: user.ID, Role: user.Role}
+	// token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
+	// tokenString, _ := token.SignedString([]byte(os.Getenv("reset_password_token")))
+
+	newPassword := u.RandomString(9)
+
+	models.ChangeUserPassword(fmt.Sprint(user.ID), newPassword)
+
+	fmt.Println(user.Email)
+	mime := "MIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n"
+	subject := "Subject: Password reset !\n"
 
 	// variables to make PlainAuth compile, without adding unnecessary noise
 	var (
-		from       = "shrestha.sudaman@gmail.com"
-		msg        = []byte("Click this link to change your password gmail.com?token=" + tokenString)
+		from       = "Snap-Back"
+		msg        = []byte(subject + mime + "Your new password is : " + newPassword)
 		recipients = []string{user.Email}
 	)
 
 	// hostname is used by PlainAuth to validate the TLS certificate
-	hostname := "smtp.gmail.com"
-	auth := smtp.PlainAuth("", "shrestha.sudaman@gmail.com", "Sud@zzle020219gmail", hostname)
-	errEmailSend := smtp.SendMail(hostname+":587", auth, from, recipients, msg)
+	auth := smtp.PlainAuth("", os.Getenv("smtp_server_username"), os.Getenv("smtp_server_password"), os.Getenv("smtp_server_hostname"))
+	errEmailSend := smtp.SendMail(os.Getenv("smtp_server_hostfulladdress"), auth, from, recipients, msg)
 	if errEmailSend != nil {
-		fmt.Println(err)
+		u.Respond(w, r, nil, fmt.Sprint(errEmailSend), "", http.StatusInternalServerError)
+	} else {
+		u.Respond(w, r, nil, "Email sent.", "", http.StatusOK)
+		fmt.Println("Email sent")
 	}
 }
 
@@ -141,6 +152,20 @@ var ChangePasswordByUser = func(w http.ResponseWriter, r *http.Request) {
 	u.Respond(w, r, nil, message, "", status)
 }
 
+// GetUsersCount all sessions count
+var GetUsersCount = func(w http.ResponseWriter, r *http.Request) {
+	var count int
+	err := models.GetDB().Table("users").Where("deleted_at ISNULL").Count(&count).Error
+
+	fmt.Println(count)
+
+	if err != nil {
+		u.Respond(w, r, nil, err.Error(), "", http.StatusInternalServerError)
+	}
+
+	u.Respond(w, r, count, "", "count", http.StatusOK)
+}
+
 // UpdateUser by id and by current user
 var UpdateUser = func(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -194,12 +219,25 @@ var GetUser = func(w http.ResponseWriter, r *http.Request) {
 
 // GetUsers for admin user
 var GetUsers = func(w http.ResponseWriter, r *http.Request) {
+	limit, convErrLimit := strconv.ParseInt(r.FormValue("limit"), 10, 64)
+	page, convErrPage := strconv.ParseInt(r.FormValue("page"), 10, 64)
+
+	if convErrLimit != nil {
+		limit = -1
+	}
+
+	if convErrPage != nil {
+		page = 1
+	}
+
 	var users []models.User
 
 	_, message, status := u.GetDefaultResponseData()
 
+	actualOffset := (page - 1) * limit
+
 	if IsCurrentUser(w, r, "admin") {
-		users, message, status = models.GetUsers()
+		users, message, status = models.GetUsers(limit, actualOffset)
 		u.Respond(w, r, users, message, "users", status)
 	}
 

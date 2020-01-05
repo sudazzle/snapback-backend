@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"snapback/models"
 	u "snapback/utils"
@@ -32,6 +33,9 @@ var CreateSession = func(w http.ResponseWriter, r *http.Request) {
 			session.Status = "next"
 		}
 
+		tokens := models.GetTokens(user.UserID)
+		u.SendNotification(tokens, "New trainning session open for signups.")
+
 		payload, message, status = session.Create()
 	}
 
@@ -56,15 +60,30 @@ var GetNextSessions = func(w http.ResponseWriter, r *http.Request) {
 // GetAllSessions to get all the sessions for admin and trainers only
 // trainers get their sessions only
 var GetAllSessions = func(w http.ResponseWriter, r *http.Request) {
+	limit, convErrLimit := strconv.ParseInt(r.FormValue("limit"), 10, 64)
+	page, convErrPage := strconv.ParseInt(r.FormValue("page"), 10, 64)
+
+	if convErrLimit != nil {
+		limit = -1
+	}
+
+	if convErrPage != nil {
+		page = 1
+	}
+
 	var sessions []*models.Session
 	payload, message, status := u.GetDefaultResponseData()
 	user := u.GetCurrentUser(r).(*models.Token)
 	var err error
+
+	actualOffset := (page - 1) * limit
+
 	if IsCurrentUser(w, r, "admin") {
-		err = models.GetDB().Table("sessions").Find(&sessions).Error
+		fmt.Println(actualOffset)
+		err = models.GetDB().Order("id desc").Limit(limit).Table("sessions").Offset(actualOffset).Find(&sessions).Error
 		payload = sessions
 	} else if IsCurrentUser(w, r, "trainer") {
-		err = models.GetDB().Table("sessions").Where("user_id = ?", user.UserID).Find(&sessions).Error
+		err = models.GetDB().Order("id desc").Limit(limit).Table("sessions").Where("user_id = ?", user.UserID).Offset(actualOffset).Find(&sessions).Error
 		payload = sessions
 	}
 
@@ -142,4 +161,18 @@ var SetSessionDone = func(session *models.Session) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// GetSessionCount all sessions count
+var GetSessionCount = func(w http.ResponseWriter, r *http.Request) {
+	var count int
+	err := models.GetDB().Table("sessions").Where("deleted_at ISNULL").Count(&count).Error
+
+	fmt.Println(count)
+
+	if err != nil {
+		u.Respond(w, r, nil, err.Error(), "", http.StatusInternalServerError)
+	}
+
+	u.Respond(w, r, count, "", "count", http.StatusOK)
 }

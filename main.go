@@ -57,6 +57,8 @@ func main() {
 
 	var apis = router.PathPrefix("/api").Subrouter()
 
+	fmt.Println(u.RandomString(9))
+
 	apis.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("api endpoint not found")
 		w.WriteHeader(http.StatusNotFound)
@@ -80,6 +82,8 @@ func main() {
 	apis.HandleFunc("/users/new", handlers.CreateUser).Methods("POST")
 	apis.HandleFunc("/users/login", handlers.Authenticate).Methods("POST")
 	apis.HandleFunc("/users", handlers.GetUsers).Methods("GET")
+	apis.HandleFunc("/users", handlers.GetUsers).Queries("limit", "{limit}", "page", "{page}").Methods("GET")
+	apis.HandleFunc("/users/count", handlers.GetUsersCount).Methods("GET")
 	apis.HandleFunc("/users/{id:[0-9]+}", handlers.GetUser).Methods("GET")
 	apis.HandleFunc("/get-my-info", handlers.GetUser).Methods("GET")
 	apis.HandleFunc("/users/{id:[0-9]+}", handlers.UpdateUser).Methods("PATCH")
@@ -93,6 +97,8 @@ func main() {
 	apis.HandleFunc("/sessions/new", handlers.CreateSession).Methods("POST")
 	apis.HandleFunc("/sessions/next", handlers.GetNextSessions).Methods("GET")
 	apis.HandleFunc("/sessions", handlers.GetAllSessions).Methods("GET")
+	apis.HandleFunc("/sessions", handlers.GetAllSessions).Queries("limit", "{limit}", "page", "{page}").Methods("GET")
+
 	apis.HandleFunc("/sessions/{id:[0-9]+}", handlers.GetSessionByID).Methods("GET")
 	apis.HandleFunc("/sessions/{id:[0-9]+}", handlers.UpdateSession).Methods("PATCH")
 	apis.HandleFunc("/sessions/{id:[0-9]+}", handlers.DeleteSession).Methods("DELETE")
@@ -101,6 +107,7 @@ func main() {
 	apis.HandleFunc("/sessions/{id:[0-9]+}/signups", handlers.GetSignupsBySessionID).Methods("GET")
 	apis.HandleFunc("/sessions/{id:[0-9]+}/start", handlers.DoAttendence).Methods("PATCH")
 	apis.HandleFunc("/get-my-signups", handlers.GetNextSignups).Methods("GET")
+	apis.HandleFunc("/sessions/count", handlers.GetSessionCount).Methods("GET")
 	// apis.HandleFunc("/get-my-finished-signups", handlers.GetParticipatedSignups).Methods("GET")
 	apis.HandleFunc("/signups/{id:[0-9]+}/cancel", handlers.CancelSignup).Methods("DELETE")
 

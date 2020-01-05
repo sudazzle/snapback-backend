@@ -2,7 +2,11 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
+
+	"github.com/NaySoftware/go-fcm"
 )
 
 // UserKey type for context
@@ -35,4 +39,27 @@ func Respond(w http.ResponseWriter, r *http.Request, data interface{}, message s
 	w.Header().Add("content-type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(payload)
+}
+
+// SendNotification to the mobile devices through firebase
+func SendNotification(tokens []string, message string) {
+	var serverKey = os.Getenv("firebase_server_key")
+
+	data := map[string]string{
+		"msg": message,
+		"sum": "Snap-Back",
+	}
+
+	c := fcm.NewFcmClient(serverKey)
+	c.NewFcmRegIdsMsg(tokens, data)
+	// c.AppendDevices(xds)
+
+	status, err := c.Send()
+
+	if err == nil {
+		status.PrintResults()
+	} else {
+		fmt.Println(err)
+	}
+
 }
