@@ -50,9 +50,13 @@ func SendNotification(tokens []string, message string) {
 		"sum": "Snap-Back",
 	}
 
+	notification := fcm.NotificationPayload{Title: "New Snap-Back Session", Body: message, Sound: "default"}
+
 	c := fcm.NewFcmClient(serverKey)
 	c.NewFcmRegIdsMsg(tokens, data)
 	// c.AppendDevices(xds)
+	c.SetPriority("high")
+	c.SetNotificationPayload(&notification)
 
 	status, err := c.Send()
 
