@@ -24,8 +24,7 @@ var DoSignup = func(w http.ResponseWriter, r *http.Request) {
 
 	curSession, _, _ := models.GetSessionByID(fmt.Sprint(signup.SessionID))
 
-	// @TODO get max participants from the table
-	if signup.GetSignupCounts() > 5 {
+	if uint(signup.GetSignupCounts()) >= curSession.(*models.Session).MaxParticipants {
 		signup.Status = "waiting"
 	} else {
 		signup.Status = "priority"

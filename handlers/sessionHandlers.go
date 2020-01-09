@@ -44,15 +44,35 @@ var CreateSession = func(w http.ResponseWriter, r *http.Request) {
 
 // GetNextSessions - returns the upcoming snapback trainning sessions
 var GetNextSessions = func(w http.ResponseWriter, r *http.Request) {
-	var sessions []*models.Session
-	payload, message, status := u.GetDefaultResponseData()
-	err := models.GetDB().Table("sessions").Where("status = ?", "next").Find(&sessions).Error
+	type Result struct {
+		ID              uint   `json:"id"`
+		Title           string `json:"title"`
+		MaxParticipants int    `json:"max_participants"`
+		DateNTime       string `json:"date_n_time"`
+		Description     string `json:"description"`
+		Status          string `json:"status"`
+		Signups         int    `json:"signups"`
+	}
+
+	_, message, status := u.GetDefaultResponseData()
+
+	// Raw SQL
+	rows, err := models.GetDB().Raw("select s.id, s.title, s.max_participants, s.date_n_time, s.description, s.status, count(*) signups from sessions as s left join signups as u on  s.id = u.session_id where s.deleted_at is null and s.status = 'next' group by s.id order by s.created_at").Rows() // (*sql.Rows, error)
+	defer rows.Close()
+
+	var payload []Result
+	for rows.Next() {
+		var result Result
+		models.GetDB().ScanRows(rows, &result)
+		payload = append(payload, result)
+	}
+
+	// err := models.GetDB().Table("sessions").Where("status = ?", "next").Find(&sessions).Error
 
 	if err != nil {
 		message = "Could not perform the request"
 		status = http.StatusInternalServerError
-	} else {
-		payload = sessions
+		payload = nil
 	}
 	u.Respond(w, r, payload, message, "sessions", status)
 }
