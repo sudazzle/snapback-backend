@@ -15,10 +15,21 @@ type Signup struct {
 	Attendence bool   `json:"attendence"`
 }
 
+// GetSignupByID returns signup by ID
+func (signup *Signup) GetSignupByID() interface{} {
+	err := GetDB().First(&signup, signup.ID).Error
+
+	if err == nil {
+		return signup
+	}
+
+	return nil
+}
+
 // GetSignupCounts - returns the number of participants signed up for the trainning session
 func (signup *Signup) GetSignupCounts() int {
 	var count int
-	GetDB().Table("signups").Where("not deleted_at is null and session_id = ?", signup.SessionID).Count(&count)
+	GetDB().Table("signups").Where("deleted_at is null and session_id = ?", signup.SessionID).Count(&count)
 	return count
 }
 

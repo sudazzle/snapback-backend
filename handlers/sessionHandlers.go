@@ -33,7 +33,7 @@ var CreateSession = func(w http.ResponseWriter, r *http.Request) {
 			session.Status = "next"
 		}
 
-		tokens := models.GetTokens(user.UserID)
+		tokens := models.GetTokens(user.UserID, false)
 		u.SendNotification(tokens, "New trainning session open for signups.")
 
 		payload, message, status = session.Create()
@@ -57,7 +57,7 @@ var GetNextSessions = func(w http.ResponseWriter, r *http.Request) {
 	_, message, status := u.GetDefaultResponseData()
 
 	// Raw SQL
-	rows, err := models.GetDB().Raw("select s.id, s.title, s.max_participants, s.date_n_time, s.description, s.status, count(*) signups from sessions as s left join signups as u on  s.id = u.session_id where s.deleted_at is null and s.status = 'next' group by s.id order by s.created_at").Rows() // (*sql.Rows, error)
+	rows, err := models.GetDB().Raw("select s.id, s.title, s.max_participants, s.date_n_time, s.description, s.status, count(*) signups from sessions as s left join signups as u on  s.id = u.session_id where s.deleted_at is null and u.deleted_at is null and s.status = 'next' group by s.id order by s.created_at").Rows() // (*sql.Rows, error)
 	defer rows.Close()
 
 	var payload []Result

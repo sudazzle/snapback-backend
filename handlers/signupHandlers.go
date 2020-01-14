@@ -64,13 +64,20 @@ var CancelSignup = func(w http.ResponseWriter, r *http.Request) {
 	signup := &models.Signup{}
 	signup.ID = uint(ID)
 
+	signup.GetSignupByID()
+
 	user := u.GetCurrentUser(r).(*models.Token)
+	tokens := models.GetTokens(user.UserID, signup.SessionID)
 
 	delerr := models.GetDB().Where("user_id = ?", user.UserID).Delete(signup).Error
 
 	if delerr != nil {
 		u.Respond(w, r, nil, delerr.Error(), "", http.StatusInternalServerError)
 		return
+	}
+
+	if len(tokens) > 0 {
+		u.SendNotification(tokens, "Spot open on waiting list. Go to My Signups and claim spot.")
 	}
 
 	u.Respond(w, r, nil, "Signup cancelled", "", http.StatusOK)
