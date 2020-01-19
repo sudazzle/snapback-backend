@@ -33,7 +33,7 @@ var CreateSession = func(w http.ResponseWriter, r *http.Request) {
 			session.Status = "next"
 		}
 
-		tokens := models.GetTokens(user.UserID, false)
+		tokens := models.GetTokens(user.UserID, true)
 		u.SendNotification(tokens, "New trainning session open for signups.")
 
 		payload, message, status = session.Create()

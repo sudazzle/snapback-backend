@@ -11,6 +11,7 @@ type Signup struct {
 	gorm.Model
 	UserID     uint   `json:"user_id"`
 	SessionID  uint   `json:"session_id"`
+	QueueNo    uint   `json:"queue_no"`
 	Status     string `json:"status"` // priority / waiting and soft delete means cancel
 	Attendence bool   `json:"attendence"`
 }

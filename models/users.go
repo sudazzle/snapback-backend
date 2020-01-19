@@ -182,17 +182,18 @@ func GetUsers(limit int64, offset int64) ([]User, string, int) {
 }
 
 // GetTokens returns the list of firebase device tokens
-func GetTokens(userID uint, sessionID interface{}) []string {
+func GetTokens(userID uint, exclude bool) []string {
 	var tokens []string
 	var rows *sql.Rows
 	var err error
 
 	fmt.Print(userID)
 
-	if sessionID == nil {
+	if exclude == true {
 		rows, err = GetDB().Table("users").Select("device_token").Where("device_token IS NOT NULL AND ID <> ?", userID).Rows()
 	} else {
-		rows, err = GetDB().Raw("SELECT u.device_token FROM users u INNER JOIN signups s ON u.ID = s.user_id WHERE u.device_token IS not NULL and s.session_id = ? and s.deleted_at IS NULL and s.status='waiting' and u.ID <> ?", sessionID, userID).Rows()
+		rows, err = GetDB().Table("users").Select("device_token").Where("device_token IS NOT NULL AND ID = ?", userID).Rows()
+		// rows, err = GetDB().Raw("SELECT u.device_token FROM users u INNER JOIN signups s ON u.ID = s.user_id WHERE u.device_token IS not NULL and s.session_id = ? and s.deleted_at IS NULL and s.status='waiting' and u.ID <> ?", sessionID, userID).Rows()
 	}
 
 	defer rows.Close()

@@ -24,8 +24,11 @@ var DoSignup = func(w http.ResponseWriter, r *http.Request) {
 
 	curSession, _, _ := models.GetSessionByID(fmt.Sprint(signup.SessionID))
 
-	if uint(signup.GetSignupCounts()) >= curSession.(*models.Session).MaxParticipants {
+	count := uint(signup.GetSignupCounts())
+	max := curSession.(*models.Session).MaxParticipants
+	if count >= max {
 		signup.Status = "waiting"
+		signup.QueueNo = count - max + 1
 	} else {
 		signup.Status = "priority"
 	}
@@ -51,6 +54,21 @@ var DoSignup = func(w http.ResponseWriter, r *http.Request) {
 	u.Respond(w, r, payload, message, "signup", status)
 }
 
+// UpdateWaitingList to update the queue no
+var updateWaitingList = func(sessionId uint) {
+	models.GetDB().Exec("update signups set queue_no = queue_no - 1 where session_id = ? and status = 'waiting'", sessionId)
+}
+
+var upgradeFirstInWaitingList = func(sessionId uint) {
+	signup := &models.Signup{}
+	models.GetDB().Where("session_id = ? and queue_no = 0", sessionId).First(&signup)
+
+	models.GetDB().Model(&signup).Updates(map[string]interface{}{"queue_no": false, "status": "priority"})
+
+	tokens := models.GetTokens(signup.UserID, false)
+	u.SendNotification(tokens, "You have got a place on a snap-back workout")
+}
+
 // CancelSignup to cancel the signup
 var CancelSignup = func(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -67,18 +85,21 @@ var CancelSignup = func(w http.ResponseWriter, r *http.Request) {
 	signup.GetSignupByID()
 
 	user := u.GetCurrentUser(r).(*models.Token)
-	tokens := models.GetTokens(user.UserID, signup.SessionID)
+
+	// tokens := models.GetTokens(user.UserID, signup.SessionID)
 
 	delerr := models.GetDB().Where("user_id = ?", user.UserID).Delete(signup).Error
+	updateWaitingList(signup.SessionID)
+	upgradeFirstInWaitingList(signup.SessionID)
 
 	if delerr != nil {
 		u.Respond(w, r, nil, delerr.Error(), "", http.StatusInternalServerError)
 		return
 	}
 
-	if len(tokens) > 0 {
-		u.SendNotification(tokens, "Spot open on waiting list. Go to My Signups and claim spot.")
-	}
+	// if len(tokens) > 0 {
+	// 	u.SendNotification(tokens, "Spot open on waiting list. Go to My Signups and claim spot.")
+	// }
 
 	u.Respond(w, r, nil, "Signup cancelled", "", http.StatusOK)
 }
