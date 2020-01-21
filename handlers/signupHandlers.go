@@ -116,9 +116,10 @@ var GetNextSignups = func(w http.ResponseWriter, r *http.Request) {
 		DateNTime       string `json:"date_n_time"`
 		MaxParticipants int    `json:"max_participants"`
 		Status          string `json:"status"`
+		QueueNo         uint   `json:"queue_no"`
 	}
 
-	rows, err := models.GetDB().Raw("SELECT signups.id, signups.session_id, sessions.title, sessions.description, sessions.date_n_time, sessions.max_participants, signups.status FROM sessions INNER JOIN signups ON sessions.id = signups.session_id WHERE signups.user_id = ? and sessions.status = 'next' and signups.deleted_at is null", user.UserID).Rows()
+	rows, err := models.GetDB().Raw("SELECT signups.id, signups.session_id, sessions.title, sessions.description, sessions.date_n_time, sessions.max_participants, signups.status, signups.queue_no FROM sessions INNER JOIN signups ON sessions.id = signups.session_id WHERE signups.user_id = ? and sessions.status = 'next' and signups.deleted_at is null", user.UserID).Rows()
 	defer rows.Close()
 	if err != nil {
 		u.Respond(w, r, nil, err.Error(), "", http.StatusInternalServerError)

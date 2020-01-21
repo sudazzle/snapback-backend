@@ -28,7 +28,10 @@ var CreateSession = func(w http.ResponseWriter, r *http.Request) {
 		message = "Unauthorized."
 		status = http.StatusForbidden
 	} else {
-		session.UserID = user.UserID
+		if user.Role == "trainer" {
+			session.UserID = user.UserID
+		}
+
 		if session.Status == "" {
 			session.Status = "next"
 		}
