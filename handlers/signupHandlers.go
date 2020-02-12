@@ -90,7 +90,10 @@ var CancelSignup = func(w http.ResponseWriter, r *http.Request) {
 
 	delerr := models.GetDB().Where("user_id = ?", user.UserID).Delete(signup).Error
 	updateWaitingList(signup.SessionID)
-	upgradeFirstInWaitingList(signup.SessionID)
+
+	if signup.Status == "priority" {
+		upgradeFirstInWaitingList(signup.SessionID)
+	}
 
 	if delerr != nil {
 		u.Respond(w, r, nil, delerr.Error(), "", http.StatusInternalServerError)

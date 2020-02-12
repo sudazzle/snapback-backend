@@ -10,10 +10,11 @@ package main
 import (
 	"log"
 
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 
 	// "github.com/gorilla/handlers"
-	"github.com/gorilla/csrf"
+	// "github.com/gorilla/csrf"
 	// "snapback/app"
 
 	handlers "snapback/handlers"
@@ -34,7 +35,7 @@ type AppInfo struct {
 
 func main() {
 	router := mux.NewRouter()
-	csrfMiddleware := csrf.Protect([]byte(os.Getenv("csrf_token_key")), csrf.Secure(false), csrf.CookieName("snapback_csrf"), csrf.MaxAge(0), csrf.Path("/"))
+	// csrfMiddleware := csrf.Protect([]byte(os.Getenv("csrf_token_key")), csrf.Secure(false), csrf.CookieName("snapback_csrf"), csrf.MaxAge(0), csrf.Path("/"))
 
 	// This one is for when the backend and the frontend are in the different servers
 	//  csrfMiddleware := csrf.Protect([]byte("32-byte-long-auth-key"), csrf.TrustedOrigins([]string{"http://localhost:8080"}))
@@ -72,7 +73,7 @@ func main() {
 	})
 
 	apis.Use(handlers.JwtAuthentication)
-	apis.Use(csrfMiddleware)
+	// apis.Use(csrfMiddleware)
 
 	apis.HandleFunc("/info", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-CSRF-Token", csrf.Token(r))
