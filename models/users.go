@@ -148,7 +148,7 @@ func Login(email, password string) (interface{}, string, int) {
 	tokenString, _ := token.SignedString([]byte(os.Getenv("token_password")))
 	user.Token = tokenString
 
-	return user, "Logged in.", http.StatusOK
+	return user, "", http.StatusOK
 }
 
 // GetUser returns user by id or email
