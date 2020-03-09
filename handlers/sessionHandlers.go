@@ -55,13 +55,13 @@ var GetNextSessions = func(w http.ResponseWriter, r *http.Request) {
 		DateNTime       string `json:"date_n_time"`
 		Description     string `json:"description"`
 		Status          string `json:"status"`
-		Signups         int    `json:"signups"`
+		SignupCounts    int    `json:"signups"`
 	}
 
 	_, message, status := u.GetDefaultResponseData()
 
 	// Raw SQL
-	rows, err := models.GetDB().Raw("select s.id, s.title, s.user_id, s.max_participants, s.date_n_time, s.description, s.status, count(*) signups from sessions as s left join signups as u on  s.id = u.session_id where s.deleted_at is null and u.deleted_at is null and s.status = 'next' group by s.id order by s.created_at").Rows() // (*sql.Rows, error)
+	rows, err := models.GetDB().Raw("select s.id, s.title, s.user_id, s.max_participants, s.date_n_time, s.description, s.status, u.signup_counts from sessions as s left join (select session_id, count(*) signup_counts from signups where deleted_at is null group by session_id) as u on s.id = u.session_id where s.deleted_at is null and s.status = 'next' order by s.created_at").Rows() // (*sql.Rows, error)
 	defer rows.Close()
 
 	var payload []Result
