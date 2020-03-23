@@ -169,6 +169,9 @@ var DeleteSession = func(w http.ResponseWriter, r *http.Request) {
 
 	if IsCurrentUser(w, r, "admin") || IsCurrentUser(w, r, "trainer") {
 		message, status := models.DeleteSession(vars["id"])
+		user := u.GetCurrentUser(r).(*models.Token)
+		tokens := models.GetTokens(user.UserID, true)
+		u.SendNotification(tokens, "A trainning session has been cancelled. Please check.")
 		u.Respond(w, r, nil, message, "", status)
 	} else {
 		u.Respond(w, r, nil, "Unauthorized", "", http.StatusForbidden)
